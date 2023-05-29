@@ -1,19 +1,21 @@
-import { authMiddleware } from "@clerk/nextjs";
+import { withClerkMiddleware } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-
-export default authMiddleware({
-  afterAuth(auth, req, evt) {
-    // handle users who aren't authenticated
-    if (!auth.userId && !auth.isPublicRoute) {
-      const signInUrl = new URL('/sign-in', req.url)
-      signInUrl.searchParams.set('redirect_url', req.url)
-      return NextResponse.redirect(signInUrl)
-    }
-  },
-
-  publicRoutes:["/", "/:locale/sign-in"]
+ 
+export default withClerkMiddleware(() => {
+  console.log("Middleware running");
+  return NextResponse.next();
 });
-
+ 
 export const config = {
-  matcher: ["/((?!.*\\..*|_next).*)", "/", "/(api|trpc)(.*)"],
-};
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next
+     * - static (static files)
+     * - favicon.ico (favicon file)
+     * - public folder
+     */
+    "/((?!static|.*\\..*|_next|favicon.ico).*)",
+    "/",
+  ],
+}
