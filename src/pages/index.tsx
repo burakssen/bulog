@@ -3,13 +3,67 @@ import { type NextPage } from "next";
 import Head from "next/head";
 import Link from "next/link";
 import { api } from "~/utils/api";
+import type { RouterOutputs } from "~/utils/api";
+
+import Image from "next/image";
+
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+
+dayjs.extend(relativeTime);
+
+const CreatePostWizard = () => {
+  const { user } = useUser();
+
+  console.log(user);
+  if (!user) return null;
+
+  return (
+    <div className="flex w-full gap-3">
+      <Image
+        src={user.profileImageUrl}
+        alt="Profile image"
+        className="h-16 w-16 rounded-full"
+        width={56}
+        height={56}
+      />
+      <input
+        placeholder="Type your post!"
+        className="grow bg-transparent outline-none"
+      />
+    </div>
+  );
+};
+
+type PostWithUser = RouterOutputs["posts"]["getAll"][number];
+
+const PostView = (props: PostWithUser) => {
+  const { post, author } = props;
+  return (
+    <div key={post.id} className="flex gap-3 border-b border-slate-400 p-4">
+      <Image
+        src={author.profileImageUrl}
+        alt={`@${author.username}'s profile image`}
+        className="h-16 w-16 rounded-full"
+        width={56}
+        height={56}
+      />
+      <div className="flex flex-col">
+        <div className="flex text-slate-400">
+          <span>{`@${author.username}`}</span> <span className="mx-1">·</span>{" "}
+          <span className="font-thin">{dayjs(post.createdAt).fromNow()}</span>
+        </div>
+        <span>{post.content}</span>
+      </div>
+    </div>
+  );
+};
 
 const Home: NextPage = () => {
-
   const user = useUser();
 
-  const {data, isLoading} = api.posts.getAll.useQuery();
-  
+  const { data, isLoading } = api.posts.getAll.useQuery();
+
   if (isLoading) return <div>Loading...</div>;
 
   if (!data) return <div>Someting went wrong</div>;
@@ -22,22 +76,26 @@ const Home: NextPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main className="flex h-screen justify-center">
-        <div className="w-full h-full border-x border-slate-400 md:max-w-2xl lg:max-w-6xl">
+        <div className="h-full w-full border-x border-slate-400 md:max-w-2xl lg:max-w-6xl">
           <div className="border-b border-slate-400 p-4">
-            {!user.isSignedIn && <div className="flex justify-center"><SignInButton/></div>}
-            {!!user.isSignedIn && <SignOutButton/>}
+            {!user.isSignedIn && (
+              <div className="flex justify-center">
+                <SignInButton />
+              </div>
+            )}
+            {user.isSignedIn && CreatePostWizard()}
+            {user.isSignedIn && <SignOutButton />}
           </div>
           <div className="flex flex-col">
-            {
-              data?.map((post) => (
-                <div key={post.id} className="border-b border-slate-400 p-8">
-                  {post.content}
-                </div>
-              ))
-            }
+            {data?.map((fullPost) => (
+              <PostView
+                key={fullPost.post.id}
+                post={fullPost.post}
+                author={fullPost.author}
+              />
+            ))}
+          </div>
         </div>
-        </div>
-        
       </main>
     </>
   );
