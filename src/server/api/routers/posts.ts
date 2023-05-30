@@ -56,7 +56,7 @@ export const postsRouter = createTRPCRouter({
 
   create: privateProcedure.input(
     z.object({
-      content: z.string(),
+      content: z.string().min(1, "Content must be at least 1 character long."),
     })
   ).mutation(async ({ ctx, input }) => {
     const authorId = ctx.userId;
