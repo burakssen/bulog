@@ -9,11 +9,24 @@ import Image from "next/image";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { LoadingPage } from "~/components/loading";
+import { useState } from "react";
 
 dayjs.extend(relativeTime);
 
 const CreatePostWizard = () => {
+  const ctx = api.useContext();
+
+  const { mutate, isLoading: isPosting } = api.posts.create.useMutation({
+    onSuccess: () => {
+      setContent("");
+      void ctx.posts.getAll.invalidate();
+    },
+  });
+
+  const [content, setContent] = useState("");
+
   const { user } = useUser();
+
   if (!user) return null;
 
   return (
@@ -28,7 +41,17 @@ const CreatePostWizard = () => {
       <input
         placeholder="Type your post!"
         className="grow bg-transparent outline-none"
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        disabled={isPosting}
       />
+      <button
+        onClick={() => {
+          mutate({ content });
+        }}
+      >
+        Post
+      </button>
     </div>
   );
 };
@@ -46,12 +69,12 @@ const PostView = (props: PostWithUser) => {
         width={56}
         height={56}
       />
-      <div className="flex flex-col">
+      <div className="flex flex-col justify-center">
         <div className="flex text-slate-400">
           <span>{`@${author.username}`}</span> <span className="mx-1">·</span>{" "}
           <span className="font-thin">{dayjs(post.createdAt).fromNow()}</span>
         </div>
-        <span>{post.content}</span>
+        <span className="break-all text-xl">{post.content}</span>
       </div>
     </div>
   );
@@ -99,7 +122,7 @@ const Home: NextPage = () => {
                 <SignInButton />
               </div>
             )}
-            {isSignedIn && CreatePostWizard()}
+            {isSignedIn && <CreatePostWizard />}
             {isSignedIn && <SignOutButton />}
           </div>
           <Feed />
